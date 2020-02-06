@@ -7,15 +7,15 @@ var n = "\n";
 
 function majLatelier() {
 
-  // get all current sheets
+  // get all current sheets to get coupes
   var sheetsA = ss.getSheets();
   
-  // capter Commande sheet name to program
+  // get Commande sheet name to program l'atelier
   var commandeStr = sheetsA[0].getName();
   
-  // update the pulldowns based on all sheets
+  // update the pulldowns based on all sheets, requires array
   var typeA = [];
-  // skipping sheetsA[0] which is Commande
+  // note - skipping sheetsA[0] which is Commande
   for (var i=1;i<sheetsA.length;i++) {
     // make obj and label pairs
     typeA.push(sheetsA[i].getName());
@@ -42,7 +42,6 @@ function majLatelier() {
     temp = commandeStr+'!D'+dig+':K'+dig;
     ss.getRange(temp).setBackground('#cccccc');
   }
-  Logger.log(typeA[1])
 }
 
 function getGcode() {
@@ -53,35 +52,61 @@ function getGcode() {
   var sheet1 = sheetsA[0];
   var commandeStr = sheet1.getName();
   
-  // build sous programme (sp)
-  // 1. create coupeA array of all coupes to select valid Gcode for sp
+  /*** build sous programme (sp) ***/
+  // 1. create coupeA array of all valid coupes to select Gcode for sp
   var coupeA = [];
   // get # de coupes
   var b1 = ss.getRange(commandeStr+'!B1').getValue();
   for (var i=2;i<=(b1*2);i+=2){
     var temp = "E"+i+":K"+i;
     var oneCoupe = sheet1.getRange(temp).getValues();
-    // *** only push if non-Zero
-    
-    
-    
-    coupeA.push(oneCoupe[0]);
+    // *** only push if non-Zero, skip [0] which is coupe name
+    var inclus = false;
+    for (var j=1;j<oneCoupe[0].length;j++) {
+      if (oneCoupe[0][j] > 0) {
+        inclus = true;
+        continue;
+      }
+    }
+    if (inclus) coupeA.push(oneCoupe[0]);
   }
-   //Logger.log(coupeA[0][1]); = 1
-  
-  // 2. loop once through types, checking for each type in coupeA
-  
+  //Logger.log(coupeA);
+  // 2. loop once through types, capturing Gcode sp for each type in coupeA
+  var sp = "";
   // skipping sheetsA[0] which is Commande
   for (i=1;i<sheetsA.length;i++) {
-    // e.g. Circle
+    // e.g. Circle, sheet 2 in sheetsA, the first type sheet
     var type = sheetsA[i].getName();
-    // check coupeA for Circle
+    // check first element of all arrays in coupeA for Circle
+    var match = false;
     for (var j=0;j<coupeA.length;j++) {
-       // if Circle == Circle
+       // if Circle == Circle at least once
        if (coupeA[j][0] == type) {
-         // Assign an sp code O01+10+i
+         match = true;
+         // good enough
+         continue;
        }
     }
+    // if match, add Gcode to sp
+    if (match) {
+    // Assign an sp code O01+10+i
+         sp+="O01"+(10+i)+" (sp)"+n;
+         // process Gcode arrays to strings with line breaks
+         var gStr = "";
+         var gCodeA = sheetsA[i].getRange("A1:A").getValues().filter(String);
+         for (var k=0;k<gCodeA.length;k++){
+           gStr+=gCodeA[k]+n;
+         }
+         // append to sp
+         sp+=gStr;
+         // spacer
+         sp+=n+n;
+    }
   }
+  
+  /*** build programme principal (pp) ***/
+  // ** use coupeA for valid coupes
+  
+  //return pp+sp;
 }
   

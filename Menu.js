@@ -28,5 +28,5 @@ function misaJourLatelier() {
 }
 
 function chercheGcode() {
-  SpreadsheetApp.getUi().alert("get G code");
+  SpreadsheetApp.getUi().alert(getGcode());
 }
