@@ -1,15 +1,14 @@
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
   // Or DocumentApp or FormApp.
-  ui.createMenu('gCode')
-      .addItem('m-a-j Types', 'misajourTypes')
-      .addItem('m-a-j Coupes','misajourCoupes')
+  ui.createMenu('G code')
+      .addItem("m-a-j l'atelier", 'misaJourLatelier')
       .addSeparator()
-      .addItem('get G Code','chercheGcode')
+      .addItem('get G code','chercheGcode')
       .addToUi();
 }
 
-function misajourTypes() {
+function misaJourLatelier() {
   
   // sauvegarde Gcode sur Drive
   //DriveApp.createFile("LeDernierGcode.nc", getGcode(), MimeType.PLAIN_TEXT);
@@ -25,13 +24,9 @@ function misajourTypes() {
       });
    }*/
   
-  majTypes();
-}
-
-function misajourCoupes() {
-  SpreadsheetApp.getUi().alert("maj coupes");
+  majLatelier();
 }
 
 function chercheGcode() {
-  SpreadsheetApp.getUi().alert("get G Code");
+  SpreadsheetApp.getUi().alert(getGcode());
 }
