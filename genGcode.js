@@ -2,8 +2,8 @@
 var ss = SpreadsheetApp.getActive();
 
 // vars reference
-// 1. loops - i, j, k
-// 2. grid vars - dt,np,dc,c,ssp,rs,ls,ps, tm, cd, mail
+// 1. loops - k, i, j
+// 2. grid vars - dt, tm, cd, mail, subsA
 
 // commentaires
 var n = "\n";
@@ -15,7 +15,6 @@ function getGcode() {
 
   // get atelier work area
   var sheet1 = sheetsA[0];
-  var atelierStr = sheet1.getName();
 
   // get commun
   var sheet2 = sheetsA[1];
@@ -23,10 +22,12 @@ function getGcode() {
 
   /*** Creer programme principal (pp) ***/
   // 1. get 10 general vars from atelier (add # as we go)
+  var dt = {};
+  dt.str = "Dia_Tool";
+  dt.val = sheet1.getRange("B3").getValue();
+
   // for substitution loop
   var subsA = [];
-
-  subsA.push({ str: "Dia_Tool", val: sheet1.getRange("B3").getValue() });
   subsA.push({ str: "Nb_Pass", val: sheet1.getRange("B5").getValue() });
   subsA.push({ str: "D_Cut", val: sheet1.getRange("B6").getValue() });
   subsA.push({ str: "Clearance", val: sheet1.getRange("B8").getValue() });
@@ -35,10 +36,16 @@ function getGcode() {
   subsA.push({ str: "Low_Speed", val: sheet1.getRange("B14").getValue() });
   subsA.push({ str: "Plunge_Speed", val: sheet1.getRange("B15").getValue() });
 
-  // drop-down list 1 - in, on, out
+  // drop-down list 1 - in, on, out, calculate delta
   var tm = {};
   tm.str = "Tool_Movement";
   tm.val = sheet1.getRange("B17").getValue();
+  tm.delta = 0;
+  if (tm.val == "tool inside form") {
+    tm.delta = -1 * Math.round((dt.val / 2), 1);
+  } else if (tm.val == "tool outside form") {
+    tm.delta = Math.round(dt.val / 2, 1);
+  }
 
   // drop-down list 2 - clockwise(col A) or counterCW(col B)
   var cd = {};
@@ -90,7 +97,7 @@ function getGcode() {
   // 3. create coupeA array of all valid (non-zero) coupes to select Gcode for sp
   var coupeA = [];
   // get # de coupes
-  var b1 = ss.getRange(atelierStr + '!B1').getValue();
+  var b1 = sheet1.getRange("B1").getValue();
   for (var i = 2; i <= (b1 * 2); i += 2) {
     var temp = "E" + i + ":J" + i;
     var oneCoupe = sheet1.getRange(temp).getValues();
@@ -102,15 +109,20 @@ function getGcode() {
         continue;
       }
     }
-    if (inclus) coupeA.push(oneCoupe[0]);
+    if (inclus) {
+      // correct X and Y values for tool movement using tm.delta
+
+      // create cutsA with objects for easier substitution
+
+      // une coupe, X and Y maj, str/val pairs for substition, ready to use
+      coupeA.push(oneCoupe[0]);
+    }
   }
-  // for looping
-  var len = coupeA.length;
   //Logger.log(coupeA[0][0]); - Rectangle
 
   // 4. Iterate valid coupes to create middle (milieu)
   var milieu = "";
-
+  var len = coupeA.length;
   // for each valid coupe
   for (i = 0; i < len; i++) {
     // show cut number
