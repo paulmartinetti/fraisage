@@ -27,14 +27,16 @@ function getGcode() {
   dt.val = sheet1.getRange("B3").getValue();
 
   // for substitution loop
-  var subsA = [];
-  subsA.push({ str: "Nb_Pass", val: sheet1.getRange("B5").getValue() });
-  subsA.push({ str: "D_Cut", val: sheet1.getRange("B6").getValue() });
-  subsA.push({ str: "Clearance", val: sheet1.getRange("B8").getValue() });
-  subsA.push({ str: "Spindle_Speed", val: sheet1.getRange("B10").getValue() });
-  subsA.push({ str: "Rapid_Speed", val: sheet1.getRange("B12").getValue() });
-  subsA.push({ str: "Low_Speed", val: sheet1.getRange("B14").getValue() });
-  subsA.push({ str: "Plunge_Speed", val: sheet1.getRange("B15").getValue() });
+  var subsA = [
+    { str: dt.str, val: dt.val },
+    { str: "Nb_Pass", val: sheet1.getRange("B5").getValue() },
+    { str: "D_Cut", val: sheet1.getRange("B6").getValue() },
+    { str: "Clearance", val: sheet1.getRange("B8").getValue() },
+    { str: "Spindle_Speed", val: sheet1.getRange("B10").getValue() },
+    { str: "Rapid_Speed", val: sheet1.getRange("B12").getValue() },
+    { str: "Low_Speed", val: sheet1.getRange("B14").getValue() },
+    { str: "Plunge_Speed", val: sheet1.getRange("B15").getValue() }
+  ];
 
   // drop-down list 1 - in, on, out, calculate delta
   var tm = {};
@@ -50,14 +52,13 @@ function getGcode() {
   // drop-down list 2 - clockwise(col A) or counterCW(col B)
   var cd = {};
   cd.str = "Cutting_Direction";
-  cd.val = sheet1.getRange("B18").getValue() == "clockwise" ? "A" : "B";
+  cd.val = sheet1.getRange("B18").getValue() == "horaire" ? "A" : "B";
   //Logger.log(cd.val); - A
 
   // email address to send G codde
   var mail = {};
   mail.str = "Email";
   mail.val = sheet1.getRange("B20").getValue();
-
 
   // 2. Create Commun strings (sheet2)
   // process Gcode arrays to strings with line breaks
@@ -98,7 +99,8 @@ function getGcode() {
   var coupeA = [];
   // get # de coupes
   var b1 = sheet1.getRange("B1").getValue();
-  for (var i = 2; i <= (b1 * 2); i += 2) {
+  // i is rowNum, not an array index!
+  for (i = 2; i <= (b1 * 2); i += 2) {
     var temp = "E" + i + ":J" + i;
     var oneCoupe = sheet1.getRange(temp).getValues();
     // *** only push if non-zero, skip [0] which is coupe name
@@ -110,15 +112,35 @@ function getGcode() {
       }
     }
     if (inclus) {
-      // correct X and Y values for tool movement using tm.delta
-
-      // create cutsA with objects for easier substitution
-
+      // cutsA to store labeled values for each coupe
+      var cutsA = [
+        { str: 'Type', val: "" },
+        { str: 'X', val: 0 },
+        { str: 'Y', val: 0 },
+        { str: 'Dia', val: 0 },
+        { str: 'Lg', val: 0 },
+        { str: 'Ht', val: 0 }
+      ];
+      var cutLen = cutsA.length;
+      // convert oneCoupe[0] into cutsA, labeling its values
+      for (k = 0; k < cutLen; k++) {
+        // for each coupe value
+        var cval = oneCoupe[0][k];
+        var cut = cutsA[k];
+        // update X, Y for tool movement using tm.delta before storing
+        if (cut.str == "X" || cut.str == "Y") {
+          cut.val = cval + tm.delta;
+          continue;
+        }
+        // store rest
+        cut.val = cval;
+      }
       // une coupe, X and Y maj, str/val pairs for substition, ready to use
-      coupeA.push(oneCoupe[0]);
+      coupeA.push(cutsA);
     }
   }
-  //Logger.log(coupeA[0][0]); - Rectangle
+  Logger.log(coupeA);
+  return;
 
   // 4. Iterate valid coupes to create middle (milieu)
   var milieu = "";
@@ -136,6 +158,8 @@ function getGcode() {
     //convert to string
     for (k = 0; k < gCodeA.length; k++) {
       milieu += gCodeA[k] + n;
+      // subsA
+      // cutsA
     }
     // substitute vars by looping once through row var names
     var parCoupeStrA = ["CutName", "X", "Y", "Dia", "Lg", "Ht"];
