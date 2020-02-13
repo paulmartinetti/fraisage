@@ -69,30 +69,17 @@ function getGcode() {
   var gCodeA = sheet2.getRange("A2:A").getValues().filter(String);
   // convert array to string
   for (var k = 0; k < gCodeA.length; k++) {
-    debut += gCodeA[k].toString() + n;
-    // substitute
-    var rep = "";
-    for (var i = 0; i < subsA.length; i++) {
-      var tStr = "#" + subsA[i].str;
-      var tVal = subsA[i].val.toString();
-      rep = debut.replace(tStr, tVal);
-      debut = rep;
-    }
+    var rep = subMe(gCodeA[k].toString(), subsA) + n;
+    debut += rep;
   }
+
   // Fin
-  var fin = "";
+  var fin = n;
   gCodeA = sheet2.getRange("B2:B").getValues().filter(String);
   // convert to string
-  for (var k = 0; k < gCodeA.length; k++) {
-    fin += gCodeA[k] + n;
-    // substitute
-    rep = "";
-    for (i = 0; i < subsA.length; i++) {
-      var tStr = "#" + subsA[i].str;
-      var tVal = subsA[i].val.toString();
-      rep = fin.replace(tStr, tVal);
-      fin = rep;
-    }
+  for (k = 0; k < gCodeA.length; k++) {
+    rep = subMe(gCodeA[k].toString(), subsA) + n;
+    fin += rep;
   }
 
   // 3. create coupeA array of all valid (non-zero) coupes to select Gcode for sp
@@ -139,8 +126,6 @@ function getGcode() {
       coupeA.push(cutsA);
     }
   }
-  Logger.log(coupeA);
-  return;
 
   // 4. Iterate valid coupes to create middle (milieu)
   var milieu = "";
@@ -152,35 +137,35 @@ function getGcode() {
     // spacer between cuts
     milieu += "(##################################)" + n;
     // get the corresponding sheet
-    var sheetName = coupeA[i][0];
+    var sheetName = coupeA[i][0].val;
     // get array of values based on Cutting Direction (cd.val)
     gCodeA = ss.getRange(sheetName + "!" + cd.val + "2:" + cd.val).getValues().filter(String);
     //convert to string
     for (k = 0; k < gCodeA.length; k++) {
-      milieu += gCodeA[k] + n;
-      // subsA
-      // cutsA
-    }
-    // substitute vars by looping once through row var names
-    var parCoupeStrA = ["CutName", "X", "Y", "Dia", "Lg", "Ht"];
-    // start with X value
-    for (j = 1; j < parCoupeStrA.length; j++) {
-      var pcStr = "#" + parCoupeStrA[j];
-      //Logger.log(pcStr);
-      var valStr = coupeA[i][j].toString();
-      //Logger.log(valStr);
-      var tRow = milieu.replace(pcStr, valStr);
-      milieu = tRow
+      // 1. subsA 
+      rep = subMe(gCodeA[k].toString(), subsA);
+      // 2. coupeA[i] (cutsA)
+      rep = subMe(rep, coupeA[i]) + n;
+      milieu += rep;
     }
   }
-  /*** HERE ***/
-  Logger.log(milieu);
+  // ****** Z !! - not yet doing
   // program principal
-  var ppBeforeSubs = debut + milieu + fin;
-  // make substitutions (not yet doing pecks or tool movement)
-  var pp = "";
+  var pp = debut + milieu + fin;
   // display
-  //SpreadsheetApp.getUi().alert(ppBeforeSubs);
+  //SpreadsheetApp.getUi().alert(pp);
+  // sauvegarde Gcode sur Drive
+  //DriveApp.createFile("LeDernierGcode.nc", pp, MimeType.PLAIN_TEXT);
+}
+
+function subMe(lineTxt, subA) {
+  for (var i = 0; i < subA.length; i++) {
+    var tStr = "#" + subA[i].str;
+    var tVal = subA[i].val.toString();
+    var rep = lineTxt.replace(tStr, tVal);
+    lineTxt = rep;
+  }
+  return lineTxt;
 }
 
 function majLatelier() {
