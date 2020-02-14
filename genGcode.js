@@ -23,28 +23,28 @@ function getGcode() {
   var sheetsA = ss.getSheets();
 
   // get atelier work area
-  var sheet1 = sheetsA[0];
+  var atelier = sheetsA[0];
 
   // get commun
-  var sheet2 = sheetsA[1];
+  var commun = sheetsA[1];
 
   /*** Creer programme principal (pp) ***/
   // 1. get vars that are the same for all cuts
   // Diameter of the tool
   var dt = {};
   dt.str = "Dia_Tool";
-  dt.val = sheet1.getRange("B3").getValue();
+  dt.val = atelier.getRange("B3").getValue();
 
   // for substitution loop
   var subsA = [
     { str: dt.str, val: dt.val },
-    { str: "Nb_Pass", val: sheet1.getRange("B5").getValue() },
-    { str: "D_Cut", val: sheet1.getRange("B6").getValue() },
-    { str: "Clearance", val: sheet1.getRange("B8").getValue() },
-    { str: "Spindle_Speed", val: sheet1.getRange("B10").getValue() },
-    { str: "Rapid_Speed", val: sheet1.getRange("B12").getValue() },
-    { str: "Low_Speed", val: sheet1.getRange("B14").getValue() },
-    { str: "Plunge_Speed", val: sheet1.getRange("B15").getValue() }
+    { str: "Nb_Pass", val: atelier.getRange("B5").getValue() },
+    { str: "D_Cut", val: atelier.getRange("B6").getValue() },
+    { str: "Clearance", val: atelier.getRange("B8").getValue() },
+    { str: "Spindle_Speed", val: atelier.getRange("B10").getValue() },
+    { str: "Rapid_Speed", val: atelier.getRange("B12").getValue() },
+    { str: "Low_Speed", val: atelier.getRange("B14").getValue() },
+    { str: "Plunge_Speed", val: atelier.getRange("B15").getValue() }
   ];
 
   // drop-down list 1 - in, on, out, calculate delta for Lg, Ht
@@ -52,7 +52,7 @@ function getGcode() {
   // from the width and height
   var tm = {};
   tm.str = "Tool_Movement";
-  tm.val = sheet1.getRange("B17").getValue();
+  tm.val = atelier.getRange("B17").getValue();
   tm.delta = 0;
   if (tm.val == "tool inside form") {
     tm.delta = -1 * Math.round((dt.val / 2), 1);
@@ -63,13 +63,13 @@ function getGcode() {
   // drop-down list 2 - clockwise(col A) or counterCW(col B)
   var cd = {};
   cd.str = "Cutting_Direction";
-  cd.val = sheet1.getRange("B18").getValue() == "horaire" ? "A" : "B";
+  cd.val = atelier.getRange("B18").getValue() == "horaire" ? "A" : "B";
   //Logger.log(cd.val); - A
 
   // email address to send G codde
   var mail = {};
   mail.str = "Email";
-  mail.val = sheet1.getRange("B20").getValue();
+  mail.val = atelier.getRange("B20").getValue();
 
   // 2. Create Commun strings (sheet2) - overall start and end code 
   // process Gcode arrays to strings with line breaks
@@ -77,7 +77,7 @@ function getGcode() {
   // Debut / start of overall
   var debut = "";
   // get sheet 2 (Commun) column A
-  var gCodeA = sheet2.getRange("A2:A").getValues().filter(String);
+  var gCodeA = commun.getRange("A2:A").getValues().filter(String);
   var gLen = gCodeA.length;
   // convert array to string
   for (var k = 0; k < gLen; k++) {
@@ -89,7 +89,7 @@ function getGcode() {
 
   // Fin / very end
   var fin = n;
-  gCodeA = sheet2.getRange("B2:B").getValues().filter(String);
+  gCodeA = commun.getRange("B2:B").getValues().filter(String);
   gLen = gCodeA.length;
   // convert to string
   for (k = 0; k < gLen; k++) {
@@ -102,11 +102,11 @@ function getGcode() {
   // currently always 6 values: Type, X, Y, D, Lg, Ht
   var cutLen = 6;
   // get # de coupes
-  var b1 = sheet1.getRange("B1").getValue();
+  var b1 = atelier.getRange("B1").getValue();
   // i is rowNum, not an array index!
   for (i = 2; i <= (b1 * 2); i += 2) {
     var temp = "E" + i + ":J" + i;
-    var oneCoupe = sheet1.getRange(temp).getValues();
+    var oneCoupe = atelier.getRange(temp).getValues();
     // *** only push if non-zero, skip [0] which is coupe name
     var inclus = false;
     for (var j = 1; j < cutLen; j++) {
@@ -118,7 +118,7 @@ function getGcode() {
     if (inclus) {
       // cutsA to store labeled values for each coupe
       // var needs to be refreshed each loop
-      var cutsA = [
+      var cutVarsA = [
         { str: 'Type', val: "" },
         { str: 'X', val: 0 },
         { str: 'Y', val: 0 },
@@ -128,9 +128,10 @@ function getGcode() {
       ];
       // convert oneCoupe[0] into cutsA, labeling its values
       for (k = 0; k < cutLen; k++) {
-        // for each coupe value
+        // for each coupe value entered by user
         var cval = oneCoupe[0][k];
-        var cut = cutsA[k];
+        // match with predefined var objs above
+        var cut = cutVarsA[k];
         // update Lg, Ht for tool movement using tm.delta before storing
         if (cut.str == "Lg" || cut.str == "Ht") {
           cut.val = cval + tm.delta;
@@ -140,7 +141,7 @@ function getGcode() {
         cut.val = cval;
       }
       // une coupe, X and Y maj, str/val pairs for substition, ready to use
-      coupeA.push(cutsA);
+      coupeA.push(cutVarsA);
     }
   }
 
@@ -151,7 +152,7 @@ function getGcode() {
   // for each valid coupe
   for (i = 0; i < len; i++) {
     // show cut number
-    milieu += n + "(Coupe " + (i + 1) + " of " + len + ")" + n;
+    milieu += n + "(Coupe " + (i + 1) + " de " + len + ")" + n;
     // spacer between cuts
     milieu += "(##################################)" + n;
     // get the corresponding sheet
@@ -201,7 +202,7 @@ function majLatelier() {
   var sheetsA = ss.getSheets();
 
   // get atelier work area
-  var sheet1 = sheetsA[0];
+  var atelier = sheetsA[0];
 
   // update the drop-downs based on all sheets, requires array
   var typeA = [];
@@ -214,19 +215,19 @@ function majLatelier() {
   // set drop-down rule using array of coupe types
   var rule = SpreadsheetApp.newDataValidation().requireValueInList(typeA);
   // get # of coupes
-  var b1 = sheet1.getRange("B1").getValue();
+  var b1 = atelier.getRange("B1").getValue();
 
   // m-a-j all drop-downs 
   var dig = 0;
   for (var i = 0; i < b1; i++) {
     // col E, on even rows 2+
     dig = ((i * 2) + 2);
-    sheet1.getRange('E'+dig).setDataValidation(rule);
+    atelier.getRange('E'+dig).setDataValidation(rule);
 
     // col D, add order
-    sheet1.getRange('D'+dig).setValue(i + 1);
+    atelier.getRange('D'+dig).setValue(i + 1);
 
     // colorize rows
-    sheet1.getRange('D'+dig+':J'+dig).setBackground('#cccccc');
+    atelier.getRange('D'+dig+':J'+dig).setBackground('#cccccc');
   }
 }
