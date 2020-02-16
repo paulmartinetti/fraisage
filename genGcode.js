@@ -35,9 +35,58 @@ function getGcode() {
   dt.str = "Dia_Tool";
   dt.val = atelier.getRange("B3").getValue();
 
+  // drop-down list 1 - in, on, out, calculate delta for Lg, Ht
+  // e.g. if tool is inside, subtract half the tool's diameter
+  // from the width and height
+  var tm = {};
+  tm.str = "Tool_Movement";
+  tm.val = atelier.getRange("B17").getValue();
+  tm.delta = 0;
+  
+  if (tm.val == "inside") {
+    tm.delta = -1 * (dt.val / 2);
+  } else if (tm.val == "outside") {
+    tm.delta = dt.val / 2;
+  }
+
+  // drop-down list 2 - horaire (col A) or anti-horaire(col B)
+  var cd = {};
+  cd.str = "Cutting_Direction";
+  cd.val = atelier.getRange("B18").getValue() == "horaire" ? "A" : "B";
+
+  // calculate offset for G41 and G42
+  var ofs = {};
+  ofs.str = "Offset";
+  ofs.val = "()";
+  var nofs = {};
+  nofs.str = "!Offset"
+  nofs.val = "40";
+
+  // horaire column "A"
+  if (cd.val == "A") {
+    if (tm.val == "inside"){
+      ofs.val = "42";
+    } else if (tm.val == "outside") {
+      ofs.val = "41";
+    } else {
+      ofs.val = nofs.val = "()";
+    }
+    // anti-horaire "B" (no other choice)
+  } else {
+    if (tm.val == "inside"){
+      ofs.val = "41";
+    } else if (tm.val == "outside") {
+      ofs.val = "42";
+    } else {
+      ofs.val = nofs.val = "()";
+    }
+  }
+
   // for substitution loop
   var subsA = [
     { str: dt.str, val: dt.val },
+    { str: ofs.str, val: ofs.val },
+    { str: nofs.str, val: nofs.val },
     { str: "Nb_Pass", val: atelier.getRange("B5").getValue() },
     { str: "D_Cut", val: atelier.getRange("B6").getValue() },
     { str: "Clearance", val: atelier.getRange("B8").getValue() },
@@ -46,25 +95,6 @@ function getGcode() {
     { str: "Low_Speed", val: atelier.getRange("B14").getValue() },
     { str: "Plunge_Speed", val: atelier.getRange("B15").getValue() }
   ];
-
-  // drop-down list 1 - in, on, out, calculate delta for Lg, Ht
-  // e.g. if tool is inside, subtract half the tool's diameter
-  // from the width and height
-  var tm = {};
-  tm.str = "Tool_Movement";
-  tm.val = atelier.getRange("B17").getValue();
-  tm.delta = 0;
-  if (tm.val == "tool inside form") {
-    tm.delta = -1 * Math.round((dt.val / 2), 1);
-  } else if (tm.val == "tool outside form") {
-    tm.delta = Math.round(dt.val / 2, 1);
-  }
-
-  // drop-down list 2 - clockwise(col A) or counterCW(col B)
-  var cd = {};
-  cd.str = "Cutting_Direction";
-  cd.val = atelier.getRange("B18").getValue() == "horaire" ? "A" : "B";
-  //Logger.log(cd.val); - A
 
   // email address to send G codde
   var mail = {};
@@ -134,7 +164,8 @@ function getGcode() {
         var cut = cutVarsA[k];
         // update Lg, Ht for tool movement using tm.delta before storing
         if (cut.str == "Lg" || cut.str == "Ht") {
-          cut.val = cval + tm.delta;
+          cutDec = cval + tm.delta;
+          cut.val = cutDec.toFixed(2);
           continue;
         }
         // store rest
