@@ -60,23 +60,23 @@ function getGcode() {
   ofs.val = "()";
   var nofs = {};
   nofs.str = "!Offset"
-  nofs.val = "40";
+  nofs.val = "G40";
 
   // horaire column "A"
   if (cd.val == "A") {
     if (tm.val == "inside"){
-      ofs.val = "42";
+      ofs.val = "G42";
     } else if (tm.val == "outside") {
-      ofs.val = "41";
+      ofs.val = "G41";
     } else {
       ofs.val = nofs.val = "()";
     }
     // anti-horaire "B" (no other choice)
   } else {
     if (tm.val == "inside"){
-      ofs.val = "41";
+      ofs.val = "G41";
     } else if (tm.val == "outside") {
-      ofs.val = "42";
+      ofs.val = "G42";
     } else {
       ofs.val = nofs.val = "()";
     }
@@ -145,6 +145,18 @@ function getGcode() {
         continue;
       }
     }
+    // not all zeros, but check for tool diam > circle diam, longueur, larger
+    // diameter - dt.val
+    /* var curA = oneCoupe[0];
+    if (curA[0]=="Circle" && curA[3] < dt.val){
+      SpreadsheetApp.getUi().alert("Le diamètre de la coupe "+i/2+" Circle est plus petit que l'outil !");
+      return;
+    }
+    // rectangle et Lg et Ht
+    if ((curA[0]=="Rectangle" && curA[4] < dt.val) || (curA[0]=="Rectangle" && curA[5] < dt.val)){
+      SpreadsheetApp.getUi().alert("Le longueur ou hauteur de la coupe "+i/2+"Rectangle est plus petit que l'outil !");
+      return;
+    } */
     if (inclus) {
       // cutsA to store labeled values for each coupe
       // var needs to be refreshed each loop
