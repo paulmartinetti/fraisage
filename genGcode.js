@@ -1,3 +1,8 @@
+function getFormattedDate(){
+  var today = new Date();
+  return Utilities.formatDate(today, 'GMT+1', 'yy-MMM-dd\'-t-\'HH-mm');
+}
+
 // global vars
 var ss = SpreadsheetApp.getActive();
 
@@ -145,18 +150,18 @@ function getGcode() {
         continue;
       }
     }
-    // not all zeros, but check for tool diam > circle diam, longueur, larger
+    // valid coupe not all zeros, but check for tool diam > circle diam, longueur, larger
     // diameter - dt.val
-    /* var curA = oneCoupe[0];
+    var curA = oneCoupe[0];
     if (curA[0]=="Circle" && curA[3] < dt.val){
       SpreadsheetApp.getUi().alert("Le diamètre de la coupe "+i/2+" Circle est plus petit que l'outil !");
       return;
     }
     // rectangle et Lg et Ht
     if ((curA[0]=="Rectangle" && curA[4] < dt.val) || (curA[0]=="Rectangle" && curA[5] < dt.val)){
-      SpreadsheetApp.getUi().alert("Le longueur ou hauteur de la coupe "+i/2+"Rectangle est plus petit que l'outil !");
+      SpreadsheetApp.getUi().alert("Le longueur ou hauteur de la coupe "+i/2+" Rectangle est plus petit que l'outil !");
       return;
-    } */
+    }
     if (inclus) {
       // cutsA to store labeled values for each coupe
       // var needs to be refreshed each loop
@@ -175,7 +180,7 @@ function getGcode() {
         // match with predefined var objs above
         var cut = cutVarsA[k];
         // update Lg, Ht for tool movement using tm.delta before storing
-        if (cut.str == "Lg" || cut.str == "Ht") {
+        if ((cut.str == "Lg" || cut.str == "Ht") && (cval>0)) {
           cutDec = cval + tm.delta;
           cut.val = cutDec.toFixed(2);
           continue;
@@ -218,7 +223,18 @@ function getGcode() {
   // display
   SpreadsheetApp.getUi().alert(pp);
   // sauvegarde Gcode sur Drive
-  //DriveApp.createFile("LeDernierGcode.nc", pp, MimeType.PLAIN_TEXT);
+  var date = getFormattedDate();
+  DriveApp.createFile("FraiseuseGcode"+date+".nc", pp, MimeType.PLAIN_TEXT);
+  //
+  // appelle-le
+  var file = DriveApp.getFilesByName("FraiseuseGcode"+date+".nc");
+  // send message
+  if (file.hasNext()) {
+    MailApp.sendEmail(mail.val, 'Gcode - Fraiseuse - '+date, pp, {
+      attachments: [file.next().getAs(MimeType.PLAIN_TEXT)],
+      name: 'automated emailer script'
+    });
+  }
 }
 
 // substitution function - used 4 times by getGcode()
